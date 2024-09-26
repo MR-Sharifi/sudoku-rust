@@ -1,39 +1,48 @@
+use std::ops::Range;
 use std::usize;
-use rand::thread_rng;
+use rand::{thread_rng, Rng};
 use rand::seq::SliceRandom;
 use crate::enums::sudoku_difficulty::SudokuDifficulty;
 
+const GRID_SIZE: usize = 9;
+const SUBGRID_SIZE: usize = 3;
+const INDEX_RANGE: Range<usize> = 0..GRID_SIZE;
+
+type SudokuCell = [usize; 2];
+type SudokuRow = [u8; GRID_SIZE];
+type SudokuGrid = [SudokuRow; GRID_SIZE];
+
 pub struct Sudoku
 {
-    grid: [[u8; 9]; 9]
+    grid: SudokuGrid
 }
 
 impl Sudoku {
-    pub fn new(grid: Option<[[u8; 9]; 9]>) -> Self
+    pub fn new(grid: Option<SudokuGrid>) -> Self
     {
         return match grid {
-            None => Self { grid: [[0u8; 9]; 9] },
+            None => Self { grid: [[0u8; GRID_SIZE]; GRID_SIZE] },
             Some(grid) => Self { grid }
         };
     }
 
-    pub fn print(self: &Self) -> ()
+    pub fn print(&self) -> ()
     {
-        for row_index in 0..9 as usize {
-            for column_index in 0..9 as usize {
-                print!("{} ", self.grid[row_index][column_index]);
+        for row in &self.grid {
+            for cell in row {
+                print!("{} ", cell);
             }
 
-            print!("\n");
+            println!();
         }
     }
 
-    fn find_empty_cells(self: &Self) -> Vec<[usize; 2]>
+    fn find_empty_cells(&self) -> Vec<SudokuCell>
     {
-        let mut empty_cells: Vec<[usize; 2]> = vec![];
+        let mut empty_cells: Vec<SudokuCell> = vec![];
 
-        for row_index in 0..9 as usize {
-            for column_index in 0..9 as usize {
+        for row_index in INDEX_RANGE {
+            for column_index in INDEX_RANGE {
                 if self.grid[row_index][column_index] == 0 {
                     empty_cells.push([row_index, column_index]);
                 }
@@ -43,25 +52,25 @@ impl Sudoku {
         return empty_cells;
     }
 
-    fn is_valid_placement(self: &Self, row: usize, column: usize, number: u8) -> bool
+    fn is_valid_placement(&self, row: usize, column: usize, number: u8) -> bool
     {
-        for row_index in 0..9 as usize {
+        for row_index in INDEX_RANGE {
             if self.grid[row_index][column] == number {
                 return false;
             }
         }
 
-        for column_index in 0..9 as usize {
+        for column_index in INDEX_RANGE {
             if self.grid[row][column_index] == number {
                 return false;
             }
         }
 
-        let subgrid_row: usize = (row / 3) * 3;
-        let subgrid_column: usize = (column / 3) * 3;
+        let subgrid_row: usize = (row / SUBGRID_SIZE) * SUBGRID_SIZE;
+        let subgrid_column: usize = (column / SUBGRID_SIZE) * SUBGRID_SIZE;
 
-        for subgrid_row_index in 0..3 as usize {
-            for subgrid_column_index in 0..3 as usize {
+        for subgrid_row_index in 0..SUBGRID_SIZE {
+            for subgrid_column_index in 0..SUBGRID_SIZE {
                 if self.grid[subgrid_row + subgrid_row_index][subgrid_column + subgrid_column_index] == number {
                     return false;
                 }
@@ -71,23 +80,23 @@ impl Sudoku {
         return true;
     }
 
-    fn generate_shuffled_vector(self: &Self) -> Vec<u8>
+    fn generate_shuffled_array(&self) -> SudokuRow
     {
-        let mut numbers: Vec<u8> = (1..=9).collect();
-
+        let mut numbers: SudokuRow = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+        
         numbers.shuffle(&mut thread_rng());
 
         return numbers;
     }
 
-    fn fill_recursively(self: &mut Self, empty_cells: &Vec<[usize; 2]>, nth_empty_cell: usize) -> bool
+    fn fill_recursively(&mut self, empty_cells: &[SudokuCell], nth_empty_cell: usize) -> bool
     {
         if nth_empty_cell >= empty_cells.len() {
             return true;
         }
 
-        let [row_index, column_index]: [usize; 2] = empty_cells[nth_empty_cell];
-        let numbers: Vec<u8> = self.generate_shuffled_vector();
+        let [row_index, column_index]: SudokuCell = empty_cells[nth_empty_cell];
+        let numbers: SudokuRow = self.generate_shuffled_array();
 
         for number in numbers {
             if self.is_valid_placement(row_index, column_index, number) {
@@ -104,63 +113,67 @@ impl Sudoku {
         return false;
     }
 
-    fn fill_grid(self: &mut Self) -> ()
+    fn fill_grid(&mut self) -> ()
     {
-        let empty_cells: Vec<[usize; 2]> = self.find_empty_cells();
+        let empty_cells: Vec<SudokuCell> = self.find_empty_cells();
 
         self.fill_recursively(&empty_cells, 0);
     }
 
-    fn count_solutions_recuresively(self: &mut Self, empty_cells: &Vec<[usize; 2]>, nth_empty_cell: usize, number_of_solutions: &mut u8) -> ()
+    fn count_solutions_recursively(&mut self, empty_cells: &[SudokuCell], nth_empty_cell: usize, number_of_solutions: &mut u8) -> ()
     {
         if nth_empty_cell >= empty_cells.len() {
             *number_of_solutions += 1;
             return;
         }
 
-        let [row_index, column_index]: [usize; 2] = empty_cells[nth_empty_cell];
-        let numbers: Vec<u8> = self.generate_shuffled_vector();
+        let [row_index, column_index]: SudokuCell = empty_cells[nth_empty_cell];
+        let numbers: SudokuRow = self.generate_shuffled_array();
 
         for number in numbers {
+            if *number_of_solutions > 1 {
+                return;
+            }
+
             if self.is_valid_placement(row_index, column_index, number) {
                 self.grid[row_index][column_index] = number;
-                self.count_solutions_recuresively(empty_cells, nth_empty_cell + 1, number_of_solutions);
+                self.count_solutions_recursively(empty_cells, nth_empty_cell + 1, number_of_solutions);
                 self.grid[row_index][column_index] = 0;
             }
         }
     }
 
-    fn count_solutions(self: &mut Self, number_of_solutions: &mut u8) -> ()
+    fn count_solutions(&mut self, number_of_solutions: &mut u8) -> ()
     {
-        let empty_cells: Vec<[usize; 2]> = self.find_empty_cells();
+        let empty_cells: Vec<SudokuCell> = self.find_empty_cells();
 
-        self.count_solutions_recuresively(&empty_cells, 0, number_of_solutions);
+        self.count_solutions_recursively(&empty_cells, 0, number_of_solutions);
     }
 
-    fn has_unique_solution(self: &mut Self) -> bool
+    fn has_unique_solution(&mut self) -> bool
     {
-        let number_of_solutions: &mut u8 = &mut 0;
+        let mut number_of_solutions: u8 = 0;
 
-        self.count_solutions(number_of_solutions);
+        self.count_solutions(&mut number_of_solutions);
 
-        return *number_of_solutions == 1;
+        return number_of_solutions == 1;
     }
 
-    fn remove_some_cells(self: &mut Self, number_of_cells_to_remove: u8) -> ()
+    fn remove_some_cells(&mut self, number_of_cells_to_remove: u8) -> ()
     {
-        let indexes: Vec<usize> = (0..9).collect();
-        let mut number_of_cells_to_remove: u8 = number_of_cells_to_remove;
+        let mut rng = thread_rng();
+        let mut cells_removed: u8 = 0;
 
-        while number_of_cells_to_remove > 0 {
-            let random_row_index: usize = *indexes.choose(&mut thread_rng()).unwrap();
-            let random_column_index: usize = *indexes.choose(&mut thread_rng()).unwrap();
+        while cells_removed < number_of_cells_to_remove {
+            let random_row_index: usize = rng.gen_range(INDEX_RANGE);
+            let random_column_index: usize = rng.gen_range(INDEX_RANGE);
 
             if self.grid[random_row_index][random_column_index] != 0 {
                 let backup_number: u8 = self.grid[random_row_index][random_column_index];
                 self.grid[random_row_index][random_column_index] = 0;
 
                 if self.has_unique_solution() {
-                    number_of_cells_to_remove -= 1;
+                    cells_removed += 1;
                 } else {
                     self.grid[random_row_index][random_column_index] = backup_number;
                 }
@@ -168,20 +181,20 @@ impl Sudoku {
         }
     }
 
-    pub fn generate(self: &mut Self, difficulty: SudokuDifficulty) -> &mut Self
+    pub fn generate(&mut self, difficulty: SudokuDifficulty) -> &mut Self
     {
-        self.grid[0] = self.generate_shuffled_vector().try_into().unwrap();
+        self.grid[0] = self.generate_shuffled_array();
 
         self.fill_grid();
 
-        let possible_number_of_cells: Vec<usize> = match difficulty {
-            SudokuDifficulty::ChildPlay => (40..45).collect(),
-            SudokuDifficulty::Easy => (45..50).collect(),
-            SudokuDifficulty::Medium => (50..55).collect(),
-            SudokuDifficulty::Hard => (55..60).collect(),
-            SudokuDifficulty::Expert => (60..65).collect(),
+        let range_of_cells_to_remove: Range<u8> = match difficulty {
+            SudokuDifficulty::ChildPlay => 40..45,
+            SudokuDifficulty::Easy => 45..50,
+            SudokuDifficulty::Medium => 50..55,
+            SudokuDifficulty::Hard => 55..60,
+            SudokuDifficulty::Expert => 60..65,
         };
-        let number_of_cells_to_remove: u8 = *possible_number_of_cells.choose(&mut thread_rng()).unwrap() as u8;
+        let number_of_cells_to_remove: u8 = thread_rng().gen_range(range_of_cells_to_remove);
 
         self.remove_some_cells(number_of_cells_to_remove);
 
