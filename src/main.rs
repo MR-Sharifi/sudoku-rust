@@ -1,3 +1,5 @@
+mod constants;
+mod types;
 mod enums;
 mod sudoku;
 

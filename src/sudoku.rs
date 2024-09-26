@@ -3,14 +3,8 @@ use std::usize;
 use rand::{thread_rng, Rng};
 use rand::seq::SliceRandom;
 use crate::enums::sudoku_difficulty::SudokuDifficulty;
-
-const GRID_SIZE: usize = 9;
-const SUBGRID_SIZE: usize = 3;
-const INDEX_RANGE: Range<usize> = 0..GRID_SIZE;
-
-type SudokuCell = [usize; 2];
-type SudokuRow = [u8; GRID_SIZE];
-type SudokuGrid = [SudokuRow; GRID_SIZE];
+use crate::constants::*;
+use crate::types::*;
 
 pub struct Sudoku
 {
