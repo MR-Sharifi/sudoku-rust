@@ -8,15 +8,22 @@ use crate::types::*;
 
 pub struct Sudoku
 {
-    grid: SudokuGrid
+    grid: SudokuGrid,
+    solved: bool
 }
 
 impl Sudoku {
     pub fn new(grid: Option<SudokuGrid>) -> Self
     {
         return match grid {
-            None => Self { grid: [[0u8; GRID_SIZE]; GRID_SIZE] },
-            Some(grid) => Self { grid }
+            None => Self {
+                grid: [[0u8; GRID_SIZE]; GRID_SIZE],
+                solved: false
+            },
+            Some(grid) => Self {
+                grid,
+                solved: false
+            }
         };
     }
 
@@ -83,7 +90,7 @@ impl Sudoku {
         return numbers;
     }
 
-    fn fill_recursively(&mut self, empty_cells: &[SudokuCellIndex], nth_empty_cell: usize) -> bool
+    fn solve_recursively(&mut self, empty_cells: &[SudokuCellIndex], nth_empty_cell: usize) -> bool
     {
         if nth_empty_cell >= empty_cells.len() {
             return true;
@@ -96,7 +103,7 @@ impl Sudoku {
             if self.is_valid_placement(row_index, column_index, number) {
                 self.grid[row_index][column_index] = number;
 
-                if self.fill_recursively(empty_cells, nth_empty_cell + 1) {
+                if self.solve_recursively(empty_cells, nth_empty_cell + 1) {
                     return true;
                 }
 
@@ -107,11 +114,13 @@ impl Sudoku {
         return false;
     }
 
-    fn fill_grid(&mut self) -> ()
+    fn solve(&mut self) -> ()
     {
         let empty_cells: Vec<SudokuCellIndex> = self.find_empty_cells();
 
-        self.fill_recursively(&empty_cells, 0);
+        self.solve_recursively(&empty_cells, 0);
+
+        self.solved = true;
     }
 
     fn count_solutions_recursively(&mut self, empty_cells: &[SudokuCellIndex], nth_empty_cell: usize, number_of_solutions: &mut u8) -> ()
@@ -173,13 +182,15 @@ impl Sudoku {
                 }
             }
         }
+
+        self.solved = false;
     }
 
     pub fn generate(&mut self, difficulty: SudokuDifficulty) -> &mut Self
     {
         self.grid[0] = self.generate_shuffled_array();
 
-        self.fill_grid();
+        self.solve();
 
         let range_of_cells_to_remove: Range<u8> = match difficulty {
             SudokuDifficulty::ChildPlay => 40..45,
@@ -301,7 +312,7 @@ mod tests
 
         sudoku.grid[0] = [0, 1, 4, 0, 0, 2, 0, 0, 6];
 
-        sudoku.fill_grid();
+        sudoku.solve();
 
         assert!(sudoku.has_unique_solution());
     }
@@ -311,7 +322,7 @@ mod tests
     {
         let mut sudoku: Sudoku = Sudoku::new(None);
 
-        sudoku.fill_grid();
+        sudoku.solve();
         sudoku.remove_some_cells(10);
 
         assert_eq!(sudoku.find_empty_cells().len(), 10);
