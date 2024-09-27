@@ -195,3 +195,135 @@ impl Sudoku {
         return self;
     }
 }
+
+#[cfg(test)]
+mod tests
+{
+    use super::*;
+
+    #[test]
+    fn test_creating_new_empty_grid()
+    {
+        let sudoku: Sudoku = Sudoku::new(None);
+
+        assert_eq!(sudoku.grid, [[0u8; GRID_SIZE]; GRID_SIZE]);
+    }
+
+    #[test]
+    fn test_creating_provided_grid()
+    {
+        let provided_grid: SudokuGrid = [
+            [0, 7, 0, 0, 6, 3, 1, 8, 0],
+            [0, 0, 8, 0, 0, 0, 0, 0, 0],
+            [2, 0, 0, 0, 0, 1, 0, 0, 0],
+            [0, 1, 4, 0, 0, 2, 0, 0, 6],
+            [8, 5, 3, 0, 0, 0, 0, 7, 1],
+            [0, 9, 0, 0, 0, 0, 0, 0, 4],
+            [9, 0, 0, 0, 0, 0, 0, 6, 0],
+            [0, 0, 0, 9, 0, 0, 0, 3, 8],
+            [0, 2, 0, 7, 8, 0, 0, 1, 5]
+        ];
+
+        let sudoku: Sudoku = Sudoku::new(Some(provided_grid));
+        assert_eq!(sudoku.grid, provided_grid);
+    }
+
+    #[test]
+    fn test_find_empty_cells()
+    {
+        let mut sudoku: Sudoku = Sudoku::new(None);
+
+        sudoku.grid[0][5] = 1;
+        sudoku.grid[4][7] = 3;
+        sudoku.grid[5][2] = 9;
+        sudoku.grid[8][6] = 7;
+
+        let empty_cells: Vec<SudokuCellIndex> = sudoku.find_empty_cells();
+
+        assert_eq!(empty_cells.len(), 77);
+    }
+
+    #[test]
+    fn test_is_valid_placement()
+    {
+        let mut sudoku: Sudoku = Sudoku::new(None);
+
+        sudoku.grid[4][4] = 5;
+
+        // Valid placement on row
+        assert!(sudoku.is_valid_placement(4, 7, 1));
+        assert!(!sudoku.is_valid_placement(4, 7, 5));
+
+        // Valid placement on column
+        assert!(sudoku.is_valid_placement(5, 4, 1));
+        assert!(!sudoku.is_valid_placement(5, 4, 5));
+
+        // Valid placement on subgrid
+        assert!(sudoku.is_valid_placement(5, 5, 1));
+        assert!(!sudoku.is_valid_placement(5, 5, 5));
+    }
+
+    #[test]
+    fn test_has_unique_solution()
+    {
+        let mut sudoku_with_unique_solution: Sudoku = Sudoku::new(Some([
+            [0, 7, 0, 0, 6, 3, 1, 8, 0],
+            [0, 0, 8, 0, 0, 0, 0, 0, 0],
+            [2, 0, 0, 0, 0, 1, 0, 0, 0],
+            [0, 1, 4, 0, 0, 2, 0, 0, 6],
+            [8, 5, 3, 0, 0, 0, 0, 7, 1],
+            [0, 9, 0, 0, 0, 0, 0, 0, 4],
+            [9, 0, 0, 0, 0, 0, 0, 6, 0],
+            [0, 0, 0, 9, 0, 0, 0, 3, 8],
+            [0, 2, 0, 7, 8, 0, 0, 1, 5]
+        ]));
+
+        let mut sudoku_with_multiple_solutions: Sudoku = Sudoku::new(Some([
+            [2, 9, 5, 7, 4, 3, 8, 6, 1],
+            [4, 3, 1, 8, 6, 5, 9, 0, 0],
+            [8, 7, 6, 1, 9, 2, 5, 4, 3],
+            [3, 8, 7, 4, 5, 9, 2, 1, 6],
+            [6, 1, 2, 3, 8, 7, 4, 9, 5],
+            [5, 4, 9, 2, 1, 6, 7, 3, 8],
+            [7, 6, 3, 5, 3, 4, 1, 8, 9],
+            [9, 2, 8, 6, 7, 1, 3, 5, 4],
+            [1, 5, 4, 9, 3, 8, 6, 0, 0]
+        ]));
+
+        assert!(sudoku_with_unique_solution.has_unique_solution());
+        assert!(!sudoku_with_multiple_solutions.has_unique_solution());
+    }
+
+    #[test]
+    fn test_fill_grid()
+    {
+        let mut sudoku: Sudoku = Sudoku::new(None);
+
+        sudoku.grid[0] = [0, 1, 4, 0, 0, 2, 0, 0, 6];
+
+        sudoku.fill_grid();
+
+        assert!(sudoku.has_unique_solution());
+    }
+
+    #[test]
+    fn test_remove_some_cells()
+    {
+        let mut sudoku: Sudoku = Sudoku::new(None);
+
+        sudoku.fill_grid();
+        sudoku.remove_some_cells(10);
+
+        assert_eq!(sudoku.find_empty_cells().len(), 10);
+    }
+
+    #[test]
+    fn test_generate()
+    {
+        let mut sudoku: Sudoku = Sudoku::new(None);
+
+        sudoku.generate(SudokuDifficulty::Hard);
+
+        assert!(sudoku.has_unique_solution());
+    }
+}
