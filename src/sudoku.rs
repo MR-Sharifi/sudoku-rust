@@ -164,12 +164,11 @@ impl Sudoku {
 
     fn remove_some_cells(&mut self, number_of_cells_to_remove: u8) -> ()
     {
-        let mut rng = thread_rng();
         let mut cells_removed: u8 = 0;
 
         while cells_removed < number_of_cells_to_remove {
-            let random_row_index: usize = rng.gen_range(INDEX_RANGE);
-            let random_column_index: usize = rng.gen_range(INDEX_RANGE);
+            let random_row_index: usize = thread_rng().gen_range(INDEX_RANGE);
+            let random_column_index: usize = thread_rng().gen_range(INDEX_RANGE);
 
             if self.grid[random_row_index][random_column_index] != 0 {
                 let backup_number: u8 = self.grid[random_row_index][random_column_index];
