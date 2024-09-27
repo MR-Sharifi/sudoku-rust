@@ -31,9 +31,9 @@ impl Sudoku {
         }
     }
 
-    fn find_empty_cells(&self) -> Vec<SudokuCell>
+    fn find_empty_cells(&self) -> Vec<SudokuCellIndex>
     {
-        let mut empty_cells: Vec<SudokuCell> = vec![];
+        let mut empty_cells: Vec<SudokuCellIndex> = vec![];
 
         for row_index in INDEX_RANGE {
             for column_index in INDEX_RANGE {
@@ -83,13 +83,13 @@ impl Sudoku {
         return numbers;
     }
 
-    fn fill_recursively(&mut self, empty_cells: &[SudokuCell], nth_empty_cell: usize) -> bool
+    fn fill_recursively(&mut self, empty_cells: &[SudokuCellIndex], nth_empty_cell: usize) -> bool
     {
         if nth_empty_cell >= empty_cells.len() {
             return true;
         }
 
-        let [row_index, column_index]: SudokuCell = empty_cells[nth_empty_cell];
+        let [row_index, column_index]: SudokuCellIndex = empty_cells[nth_empty_cell];
         let numbers: SudokuRow = self.generate_shuffled_array();
 
         for number in numbers {
@@ -109,19 +109,19 @@ impl Sudoku {
 
     fn fill_grid(&mut self) -> ()
     {
-        let empty_cells: Vec<SudokuCell> = self.find_empty_cells();
+        let empty_cells: Vec<SudokuCellIndex> = self.find_empty_cells();
 
         self.fill_recursively(&empty_cells, 0);
     }
 
-    fn count_solutions_recursively(&mut self, empty_cells: &[SudokuCell], nth_empty_cell: usize, number_of_solutions: &mut u8) -> ()
+    fn count_solutions_recursively(&mut self, empty_cells: &[SudokuCellIndex], nth_empty_cell: usize, number_of_solutions: &mut u8) -> ()
     {
         if nth_empty_cell >= empty_cells.len() {
             *number_of_solutions += 1;
             return;
         }
 
-        let [row_index, column_index]: SudokuCell = empty_cells[nth_empty_cell];
+        let [row_index, column_index]: SudokuCellIndex = empty_cells[nth_empty_cell];
         let numbers: SudokuRow = self.generate_shuffled_array();
 
         for number in numbers {
@@ -139,7 +139,7 @@ impl Sudoku {
 
     fn count_solutions(&mut self, number_of_solutions: &mut u8) -> ()
     {
-        let empty_cells: Vec<SudokuCell> = self.find_empty_cells();
+        let empty_cells: Vec<SudokuCellIndex> = self.find_empty_cells();
 
         self.count_solutions_recursively(&empty_cells, 0, number_of_solutions);
     }
